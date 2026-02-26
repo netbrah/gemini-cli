@@ -9,11 +9,11 @@ import {
   type SerializableConfirmationDetails,
   type ToolResultDisplay,
   debugLogger,
-  CoreToolCallStatus,
 } from '@google/gemini-cli-core';
 import {
   type HistoryItemToolGroup,
   type IndividualToolCallDisplay,
+  CoreToolCallStatus,
 } from '../types.js';
 
 /**

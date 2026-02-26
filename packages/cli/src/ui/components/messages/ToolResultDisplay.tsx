@@ -23,6 +23,12 @@ import { Scrollable } from '../shared/Scrollable.js';
 import { ScrollableList } from '../shared/ScrollableList.js';
 import { SCROLL_TO_ITEM_END } from '../shared/VirtualizedList.js';
 import { ACTIVE_SHELL_MAX_LINES } from '../../constants.js';
+import {
+  isFileDiff,
+  isTodoList,
+  hasSummary,
+  isAnsiOutput,
+} from '../../types.js';
 import { calculateToolContentMaxLines } from '../../utils/toolLayoutUtils.js';
 import { SubagentProgressDisplay } from './SubagentProgressDisplay.js';
 
@@ -37,11 +43,6 @@ export interface ToolResultDisplayProps {
   renderOutputAsMarkdown?: boolean;
   maxLines?: number;
   hasFocus?: boolean;
-}
-
-interface FileDiffResult {
-  fileDiff: string;
-  fileName: string;
 }
 
 export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
@@ -80,10 +81,18 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
 
   const { truncatedResultDisplay, hiddenLinesCount } = React.useMemo(() => {
     let hiddenLines = 0;
+    let displayContent: string | object | undefined = resultDisplay;
+
+    // Helper to handle structured objects that should be displayed as strings
+    // in the main view (grep, ls, read-many-files).
+    if (hasSummary(resultDisplay)) {
+      displayContent = resultDisplay.summary;
+    }
+
     // Only truncate string output if not in alternate buffer mode to ensure
     // we can scroll through the full output.
-    if (typeof resultDisplay === 'string' && !isAlternateBuffer) {
-      let text = resultDisplay;
+    if (typeof displayContent === 'string' && !isAlternateBuffer) {
+      let text = displayContent;
       if (text.length > MAXIMUM_RESULT_DISPLAY_CHARACTERS) {
         text = '...' + text.slice(-MAXIMUM_RESULT_DISPLAY_CHARACTERS);
       }
@@ -100,51 +109,46 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
             (hasTrailingNewline ? '\n' : '');
         }
       }
-      return { truncatedResultDisplay: text, hiddenLinesCount: hiddenLines };
+      return {
+        truncatedResultDisplay: text,
+        hiddenLinesCount: hiddenLines,
+      };
     }
 
-    if (Array.isArray(resultDisplay) && !isAlternateBuffer && maxLines) {
-      if (resultDisplay.length > maxLines) {
+    if (isAnsiOutput(displayContent) && !isAlternateBuffer && maxLines) {
+      if (displayContent.length > maxLines) {
         // We will have a label from MaxSizedBox. Reserve space for it.
         const targetLines = Math.max(1, maxLines - 1);
         return {
-          truncatedResultDisplay: resultDisplay.slice(-targetLines),
-          hiddenLinesCount: resultDisplay.length - targetLines,
+          truncatedResultDisplay: displayContent.slice(-targetLines),
+          hiddenLinesCount: displayContent.length - targetLines,
         };
       }
     }
 
-    return { truncatedResultDisplay: resultDisplay, hiddenLinesCount: 0 };
+    return { truncatedResultDisplay: displayContent, hiddenLinesCount: 0 };
   }, [resultDisplay, isAlternateBuffer, maxLines]);
 
   if (!truncatedResultDisplay) return null;
 
   // 1. Early return for background tools (Todos)
-  if (
-    typeof truncatedResultDisplay === 'object' &&
-    'todos' in truncatedResultDisplay
-  ) {
+  if (isTodoList(truncatedResultDisplay)) {
     // display nothing, as the TodoTray will handle rendering todos
     return null;
   }
 
   // 2. High-performance path: Virtualized ANSI in interactive mode
-  if (isAlternateBuffer && Array.isArray(truncatedResultDisplay)) {
+  if (isAlternateBuffer && isAnsiOutput(truncatedResultDisplay)) {
     // If availableHeight is undefined, fallback to a safe default to prevents infinite loop
     // where Container grows -> List renders more -> Container grows.
     const limit = maxLines ?? availableHeight ?? ACTIVE_SHELL_MAX_LINES;
-    const listHeight = Math.min(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      (truncatedResultDisplay as AnsiOutput).length,
-      limit,
-    );
+    const listHeight = Math.min(truncatedResultDisplay.length, limit);
 
     return (
       <Box width={childWidth} flexDirection="column" maxHeight={listHeight}>
         <ScrollableList
           width={childWidth}
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-          data={truncatedResultDisplay as AnsiOutput}
+          data={truncatedResultDisplay}
           renderItem={renderVirtualizedAnsiLine}
           estimatedItemHeight={() => 1}
           keyExtractor={keyExtractor}
@@ -195,29 +199,23 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
         {truncatedResultDisplay}
       </Text>
     );
-  } else if (
-    typeof truncatedResultDisplay === 'object' &&
-    'fileDiff' in truncatedResultDisplay
-  ) {
+  } else if (isFileDiff(truncatedResultDisplay)) {
     content = (
       <DiffRenderer
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-        diffContent={(truncatedResultDisplay as FileDiffResult).fileDiff}
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-        filename={(truncatedResultDisplay as FileDiffResult).fileName}
+        diffContent={truncatedResultDisplay.fileDiff}
+        filename={truncatedResultDisplay.fileName}
         availableTerminalHeight={availableHeight}
         terminalWidth={childWidth}
       />
     );
-  } else {
+  } else if (isAnsiOutput(truncatedResultDisplay)) {
     const shouldDisableTruncation =
       isAlternateBuffer ||
       (availableTerminalHeight === undefined && maxLines === undefined);
 
     content = (
       <AnsiOutputText
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-        data={truncatedResultDisplay as AnsiOutput}
+        data={truncatedResultDisplay}
         availableTerminalHeight={
           isAlternateBuffer ? undefined : availableHeight
         }
@@ -225,6 +223,13 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
         maxLines={isAlternateBuffer ? undefined : maxLines}
         disableTruncation={shouldDisableTruncation}
       />
+    );
+  } else {
+    // Safest fallback for any unhandled structured objects
+    content = (
+      <Text wrap="wrap" color={theme.text.primary}>
+        {JSON.stringify(truncatedResultDisplay)}
+      </Text>
     );
   }
 

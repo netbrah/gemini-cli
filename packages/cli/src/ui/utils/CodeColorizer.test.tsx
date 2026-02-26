@@ -35,9 +35,7 @@ describe('colorizeCode', () => {
       hideLineNumbers: true,
     });
 
-    const { lastFrame, waitUntilReady, unmount } = renderWithProviders(
-      <>{result}</>,
-    );
+    const { lastFrame, waitUntilReady } = renderWithProviders(<>{result}</>);
     await waitUntilReady();
     // We expect the output to preserve the empty line.
     // If the bug exists, it might look like "line 1\nline 3"
@@ -48,6 +46,5 @@ describe('colorizeCode', () => {
     // But ink-testing-library usually returns the visual representation.
 
     expect(lastFrame()).toMatch(/line 1\s*\n\s*\n\s*line 3/);
-    unmount();
   });
 });

@@ -69,8 +69,11 @@ export const createMockSettings = (
   );
 
   if (mergedOverride) {
+    const merged = createTestMergedSettings(mergedOverride);
     // @ts-expect-error - overriding private field for testing
-    loaded._merged = createTestMergedSettings(mergedOverride);
+    loaded._merged = merged;
+    // @ts-expect-error - overriding private field for testing
+    loaded._snapshot.merged = merged;
   }
 
   // Assign any function overrides (e.g., vi.fn() for methods)

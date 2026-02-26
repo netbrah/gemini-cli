@@ -699,12 +699,12 @@ export const renderWithProviders = (
   persistentStateMock.mockClear();
 
   const terminalWidth = width ?? baseState.terminalWidth;
-  let finalSettings = settings;
+  let finalSettings = settings ?? createMockSettings({});
   if (useAlternateBuffer !== undefined) {
     finalSettings = createMockSettings({
-      ...settings.merged,
+      ...finalSettings.merged,
       ui: {
-        ...settings.merged.ui,
+        ...finalSettings.merged.ui,
         useAlternateBuffer,
       },
     });

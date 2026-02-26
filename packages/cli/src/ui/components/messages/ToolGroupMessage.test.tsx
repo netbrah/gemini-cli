@@ -71,6 +71,101 @@ describe('<ToolGroupMessage />', () => {
     },
   });
 
+  describe('Compact Output Allowlist', () => {
+    const compactSettings = createMockSettings({
+      merged: {
+        ui: { compactToolOutput: true },
+      },
+    });
+
+    it('renders a tool in the allowlist using DenseToolMessage', async () => {
+      const toolCalls = [
+        createToolCall({
+          name: READ_FILE_DISPLAY_NAME,
+          resultDisplay: 'File content',
+        }),
+      ];
+      const item = createItem(toolCalls);
+
+      const { lastFrame, unmount, waitUntilReady } = renderWithProviders(
+        <ToolGroupMessage {...baseProps} item={item} toolCalls={toolCalls} />,
+        {
+          config: baseMockConfig,
+          settings: compactSettings,
+        },
+      );
+
+      await waitUntilReady();
+      const output = lastFrame();
+      // DenseToolMessage uses '→' for generic successes
+      expect(output).toContain('→');
+      expect(output).toContain(READ_FILE_DISPLAY_NAME);
+      expect(output).toContain('File content');
+      unmount();
+    });
+
+    it('renders a tool NOT in the allowlist using standard ToolMessage', async () => {
+      const toolCalls = [
+        createToolCall({
+          name: 'CustomTool',
+          resultDisplay: 'Custom result',
+        }),
+      ];
+      const item = createItem(toolCalls);
+
+      const { lastFrame, unmount, waitUntilReady } = renderWithProviders(
+        <ToolGroupMessage {...baseProps} item={item} toolCalls={toolCalls} />,
+        {
+          config: baseMockConfig,
+          settings: compactSettings,
+        },
+      );
+
+      await waitUntilReady();
+      const output = lastFrame();
+      // standard ToolMessage does NOT use '→' for generic successes
+      // It also renders borders (│, ╭, ╯, etc.)
+      expect(output).not.toContain('→');
+      expect(output).toContain('CustomTool');
+      expect(output).toContain('Custom result');
+      // Check for standard ToolMessage borders
+      expect(output).toContain('│');
+      unmount();
+    });
+
+    it('renders a tool in the allowlist using standard ToolMessage when compact mode is DISABLED', async () => {
+      const toolCalls = [
+        createToolCall({
+          name: READ_FILE_DISPLAY_NAME,
+          resultDisplay: 'File content',
+        }),
+      ];
+      const item = createItem(toolCalls);
+
+      const disabledSettings = createMockSettings({
+        merged: {
+          ui: { compactToolOutput: false },
+        },
+      });
+
+      const { lastFrame, unmount, waitUntilReady } = renderWithProviders(
+        <ToolGroupMessage {...baseProps} item={item} toolCalls={toolCalls} />,
+        {
+          config: baseMockConfig,
+          settings: disabledSettings,
+        },
+      );
+
+      await waitUntilReady();
+      const output = lastFrame();
+      expect(output).not.toContain('→');
+      expect(output).toContain(READ_FILE_DISPLAY_NAME);
+      expect(output).toContain('File content');
+      expect(output).toContain('│');
+      unmount();
+    });
+  });
+
   describe('Golden Snapshots', () => {
     it('renders single successful tool call', async () => {
       const toolCalls = [createToolCall()];

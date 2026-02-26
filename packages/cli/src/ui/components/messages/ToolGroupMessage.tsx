@@ -15,22 +15,42 @@ import type {
 import { ToolCallStatus, mapCoreStatusToDisplayStatus } from '../../types.js';
 import { ToolMessage } from './ToolMessage.js';
 import { ShellToolMessage } from './ShellToolMessage.js';
+import { DenseToolMessage } from './DenseToolMessage.js';
 import { theme } from '../../semantic-colors.js';
 import { useConfig } from '../../contexts/ConfigContext.js';
 import { isShellTool, isThisShellFocused } from './ToolShared.js';
 import {
   shouldHideToolCall,
   CoreToolCallStatus,
+  EDIT_DISPLAY_NAME,
+  GLOB_DISPLAY_NAME,
+  WEB_SEARCH_DISPLAY_NAME,
+  READ_FILE_DISPLAY_NAME,
+  LS_DISPLAY_NAME,
+  GREP_DISPLAY_NAME,
+  WEB_FETCH_DISPLAY_NAME,
+  WRITE_FILE_DISPLAY_NAME,
 } from '@google/gemini-cli-core';
 import { ShowMoreLines } from '../ShowMoreLines.js';
 import { useUIState } from '../../contexts/UIStateContext.js';
 import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
+import { useSettings } from '../../contexts/SettingsContext.js';
 import {
   calculateShellMaxLines,
   calculateToolContentMaxLines,
 } from '../../utils/toolLayoutUtils.js';
 import { getToolGroupBorderAppearance } from '../../utils/borderStyles.js';
-import { useSettings } from '../../contexts/SettingsContext.js';
+
+const COMPACT_OUTPUT_ALLOWLIST = new Set([
+  EDIT_DISPLAY_NAME,
+  GLOB_DISPLAY_NAME,
+  WEB_SEARCH_DISPLAY_NAME,
+  READ_FILE_DISPLAY_NAME,
+  LS_DISPLAY_NAME,
+  GREP_DISPLAY_NAME,
+  WEB_FETCH_DISPLAY_NAME,
+  WRITE_FILE_DISPLAY_NAME,
+]);
 
 interface ToolGroupMessageProps {
   item: HistoryItem | HistoryItemWithoutId;
@@ -45,6 +65,20 @@ interface ToolGroupMessageProps {
 
 // Main component renders the border and maps the tools using ToolMessage
 const TOOL_MESSAGE_HORIZONTAL_MARGIN = 4;
+
+// Helper to identify if a tool should use the compact view
+const isCompactTool = (
+  tool: IndividualToolCallDisplay,
+  compactMode: boolean,
+): boolean => {
+  const hasCompactOutputSupport = COMPACT_OUTPUT_ALLOWLIST.has(tool.name);
+  const displayStatus = mapCoreStatusToDisplayStatus(tool.status);
+  return (
+    compactMode &&
+    hasCompactOutputSupport &&
+    displayStatus !== ToolCallStatus.Confirming
+  );
+};
 
 export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   item,
@@ -127,7 +161,15 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
     [toolCalls],
   );
 
-  const staticHeight = /* border */ 2;
+  const lastToolIsCompact = useMemo(() => {
+    if (visibleToolCalls.length === 0) return false;
+    const last = visibleToolCalls[visibleToolCalls.length - 1];
+    return isCompactTool(last, settings.merged.ui.compactToolOutput);
+  }, [visibleToolCalls, settings.merged.ui.compactToolOutput]);
+
+  const staticHeight =
+    /* border */ 2 +
+    (lastToolIsCompact && borderBottomOverride !== false ? 1 : 0);
 
   let countToolCallsWithResults = 0;
   for (const tool of visibleToolCalls) {
@@ -226,6 +268,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   const content = (
     <Box
       flexDirection="column"
+      marginBottom={lastToolIsCompact && borderBottomOverride !== false ? 1 : 0}
       /*
       This width constraint is highly important and protects us from an Ink rendering bug.
       Since the ToolGroup can typically change rendering states frequently, it can cause
@@ -238,6 +281,9 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
       {visibleToolCalls.map((tool, index) => {
         const isFirst = index === 0;
         const isShellToolCall = isShellTool(tool.name);
+        const useCompact =
+          settings.merged.ui.compactToolOutput &&
+          COMPACT_OUTPUT_ALLOWLIST.has(tool.name);
 
         const commonProps = {
           ...tool,
@@ -252,6 +298,10 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
           borderDimColor,
           isExpandable,
         };
+
+        if (useCompact) {
+          return <DenseToolMessage key={tool.callId} {...commonProps} />;
+        }
 
         return (
           <Box
@@ -297,22 +347,26 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
           <Box
             height={0}
             width={contentWidth}
-            borderLeft={true}
-            borderRight={true}
+            borderLeft={lastToolIsCompact ? false : true}
+            borderRight={lastToolIsCompact ? false : true}
             borderTop={false}
-            borderBottom={borderBottomOverride ?? true}
+            borderBottom={
+              lastToolIsCompact ? false : (borderBottomOverride ?? true)
+            }
             borderColor={borderColor}
             borderDimColor={borderDimColor}
             borderStyle="round"
           />
         )
       }
-      {(borderBottomOverride ?? true) && visibleToolCalls.length > 0 && (
-        <ShowMoreLines
-          constrainHeight={constrainHeight && !!isExpandable}
-          isOverflowing={hasOverflow}
-        />
-      )}
+      {(borderBottomOverride ?? true) &&
+        visibleToolCalls.length > 0 &&
+        !lastToolIsCompact && (
+          <ShowMoreLines
+            constrainHeight={constrainHeight && !!isExpandable}
+            isOverflowing={hasOverflow}
+          />
+        )}
     </Box>
   );
 
