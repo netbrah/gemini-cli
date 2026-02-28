@@ -728,6 +728,13 @@ class EditToolInvocation
         ? ideClient.openDiff(this.params.file_path, editData.newContent)
         : undefined;
 
+    const diffStat = getDiffStat(
+      fileName,
+      editData.currentContent ?? '',
+      editData.newContent,
+      editData.newContent,
+    );
+
     const confirmationDetails: ToolEditConfirmationDetails = {
       type: 'edit',
       title: `Confirm Edit: ${shortenPath(makeRelative(this.params.file_path, this.config.getTargetDir()))}`,
@@ -736,6 +743,7 @@ class EditToolInvocation
       fileDiff,
       originalContent: editData.currentContent,
       newContent: editData.newContent,
+      diffStat,
       onConfirm: async (_outcome: ToolConfirmationOutcome) => {
         // Mode transitions (e.g. AUTO_EDIT) and policy updates are now
         // handled centrally by the scheduler.

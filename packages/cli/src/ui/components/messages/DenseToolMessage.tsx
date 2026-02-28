@@ -20,7 +20,7 @@ import {
   isGrepResult,
   isListResult,
 } from '../../types.js';
-import { isAlternateBufferEnabled } from '../../hooks/useAlternateBuffer.js';
+import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
 import { ToolStatusIndicator } from './ToolShared.js';
 import { theme } from '../../semantic-colors.js';
 import {
@@ -31,7 +31,7 @@ import {
 } from './DiffRenderer.js';
 import { useMouseClick } from '../../hooks/useMouseClick.js';
 import { ScrollableList } from '../shared/ScrollableList.js';
-import { COMPLETED_SHELL_MAX_LINES } from '../../constants.js';
+import { COMPACT_TOOL_SUBVIEW_MAX_LINES } from '../../constants.js';
 import { useSettings } from '../../contexts/SettingsContext.js';
 import { colorizeCode } from '../../utils/CodeColorizer.js';
 import { useToolActions } from '../../contexts/ToolActionsContext.js';
@@ -119,21 +119,14 @@ function getFileOpData(
       <Text color={theme.text.secondary} wrap="truncate-end">
         {diff.fileName}
       </Text>
-      {showDiffStat && (
-        <Text color={theme.text.secondary}>
-          {' ('}
-          <Text color={addColor}>+{added}</Text>
-          {', '}
-          <Text color={removeColor}>-{removed}</Text>
-          {')'}
-        </Text>
-      )}
     </Box>
   );
   let decision = '';
   let decisionColor = theme.text.secondary;
 
-  if (
+  if (status === ToolCallStatus.Confirming) {
+    decision = 'Confirming';
+  } else if (
     status === ToolCallStatus.Success ||
     status === ToolCallStatus.Executing
   ) {
@@ -141,19 +134,32 @@ function getFileOpData(
     decisionColor = theme.text.accent;
   } else if (status === ToolCallStatus.Canceled) {
     decision = 'Rejected';
-    decisionColor = theme.text.primary;
-  } else if (status === ToolCallStatus.Confirming) {
-    decision = 'Confirming';
+    decisionColor = theme.status.error;
   } else if (status === ToolCallStatus.Error) {
     decision = typeof resultDisplay === 'string' ? resultDisplay : 'Failed';
-    decisionColor = theme.text.accent;
+    decisionColor = theme.status.error;
   }
 
-  const summary = decision ? (
-    <Text color={decisionColor} wrap="truncate-end">
-      → {decision.replace(/\n/g, ' ')}
-    </Text>
-  ) : undefined;
+  const summary = (
+    <Box flexDirection="row">
+      {decision && (
+        <Text color={decisionColor} wrap="truncate-end">
+          → {decision.replace(/\n/g, ' ')}
+        </Text>
+      )}
+      {showDiffStat && (
+        <Box marginLeft={1} marginRight={2}>
+          <Text color={theme.text.secondary}>
+            {'('}
+            <Text color={addColor}>+{added}</Text>
+            {', '}
+            <Text color={removeColor}>-{removed}</Text>
+            {')'}
+          </Text>
+        </Box>
+      )}
+    </Box>
+  );
 
   const payload = (
     <DiffRenderer
@@ -318,7 +324,7 @@ export const DenseToolMessage: React.FC<DenseToolMessageProps> = (props) => {
   );
 
   const settings = useSettings();
-  const isAlternateBuffer = isAlternateBufferEnabled(settings);
+  const isAlternateBuffer = useAlternateBuffer();
   const { isExpanded: isExpandedInContext, toggleExpansion } = useToolActions();
 
   // Handle optional context members
@@ -393,7 +399,7 @@ export const DenseToolMessage: React.FC<DenseToolMessageProps> = (props) => {
           ? resultDisplay.replace(/\n/g, ' ')
           : 'Failed';
       const errorSummary = (
-        <Text color={theme.text.accent} wrap="wrap">
+        <Text color={theme.status.error} wrap="wrap">
           → {text.length > 120 ? text.slice(0, 117) + '...' : text}
         </Text>
       );
@@ -531,7 +537,10 @@ export const DenseToolMessage: React.FC<DenseToolMessageProps> = (props) => {
           marginTop={1}
           paddingX={1}
           flexDirection="column"
-          maxHeight={COMPLETED_SHELL_MAX_LINES + 2}
+          height={
+            Math.min(diffLines.length, COMPACT_TOOL_SUBVIEW_MAX_LINES) + 2
+          }
+          maxHeight={COMPACT_TOOL_SUBVIEW_MAX_LINES + 2}
           borderStyle="round"
           borderColor={theme.border.default}
           borderDimColor={true}

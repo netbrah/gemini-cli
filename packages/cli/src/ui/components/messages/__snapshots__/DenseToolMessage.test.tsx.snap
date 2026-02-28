@@ -46,10 +46,18 @@ exports[`DenseToolMessage > renders correctly for ReadManyFiles results 1`] = `
 `;
 
 exports[`DenseToolMessage > renders correctly for Rejected Edit tool 1`] = `
-"   -  Edit  styles.scss → Rejected
+"   -  Edit  styles.scss → Rejected (+1, -1)
 
       1 - old line
       1 + new line
+"
+`;
+
+exports[`DenseToolMessage > renders correctly for Rejected Edit tool with confirmationDetails and diffStat 1`] = `
+"   -  Edit  styles.scss → Rejected (+1, -1)
+
+      1 - body { color: blue; }
+      1 + body { color: red; }
 "
 `;
 
@@ -62,7 +70,7 @@ exports[`DenseToolMessage > renders correctly for Rejected WriteFile tool 1`] = 
 `;
 
 exports[`DenseToolMessage > renders correctly for WriteFile tool 1`] = `
-"   ✓  WriteFile  config.json (+1, -1) → Accepted
+"   ✓  WriteFile  config.json → Accepted (+1, -1)
 
       1 - old content
       1 + new content
@@ -80,7 +88,7 @@ exports[`DenseToolMessage > renders correctly for error status with string messa
 `;
 
 exports[`DenseToolMessage > renders correctly for file diff results with stats 1`] = `
-"   ✓  test-tool  test.ts (+15, -6) → Accepted
+"   ✓  test-tool  test.ts → Accepted (+15, -6)
 
       1 - old line
       1 + diff content

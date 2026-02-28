@@ -20,9 +20,8 @@ import {
   MaxSizedBox,
   MINIMUM_MAX_HEIGHT,
 } from '../components/shared/MaxSizedBox.js';
-import type { LoadedSettings } from '../../config/settings.js';
 import { debugLogger } from '@google/gemini-cli-core';
-import { isAlternateBufferEnabled } from '../hooks/useAlternateBuffer.js';
+import type { LoadedSettings } from '../../config/settings.js';
 
 // Configure theming and parsing utilities.
 const lowlight = createLowlight(common);
@@ -160,7 +159,7 @@ export function colorizeCode({
     ? false
     : settings.merged.ui.showLineNumbers;
 
-  const useMaxSizedBox = !isAlternateBufferEnabled(settings) && !returnLines;
+  const useMaxSizedBox = !settings.merged.ui.useAlternateBuffer && !returnLines;
   try {
     // Render the HAST tree using the adapted theme
     // Apply the theme's default foreground color to the top-level Text element

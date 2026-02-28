@@ -768,6 +768,7 @@ export interface ToolEditConfirmationDetails {
   fileDiff: string;
   originalContent: string | null;
   newContent: string;
+  diffStat?: DiffStat;
   isModifying?: boolean;
   ideConfirmation?: Promise<DiffUpdateResult>;
 }

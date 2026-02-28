@@ -197,6 +197,13 @@ class WriteFileToolInvocation extends BaseToolInvocation<
         ? ideClient.openDiff(this.resolvedPath, correctedContent)
         : undefined;
 
+    const diffStat = getDiffStat(
+      fileName,
+      originalContent,
+      correctedContent,
+      correctedContent,
+    );
+
     const confirmationDetails: ToolEditConfirmationDetails = {
       type: 'edit',
       title: `Confirm Write: ${shortenPath(relativePath)}`,
@@ -205,6 +212,7 @@ class WriteFileToolInvocation extends BaseToolInvocation<
       fileDiff,
       originalContent,
       newContent: correctedContent,
+      diffStat,
       onConfirm: async (_outcome: ToolConfirmationOutcome) => {
         // Mode transitions (e.g. AUTO_EDIT) and policy updates are now
         // handled centrally by the scheduler.

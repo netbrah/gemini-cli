@@ -54,3 +54,6 @@ export const MIN_TERMINAL_WIDTH_FOR_FULL_LABEL = 100;
 
 /** Default context usage fraction at which to trigger compression */
 export const DEFAULT_COMPRESSION_THRESHOLD = 0.5;
+
+// Max lines to show for subviews in compact tool output (e.g. diffs, lists)
+export const COMPACT_TOOL_SUBVIEW_MAX_LINES = 10;

@@ -23,6 +23,12 @@ export function getDiffStat(
   aiStr: string,
   userStr: string,
 ): DiffStat {
+  // Normalize all strings to use LF to ensure diff stats are accurate
+  // regardless of the source line endings.
+  const normalizedOld = oldStr.replace(/\r\n/g, '\n');
+  const normalizedAi = aiStr.replace(/\r\n/g, '\n');
+  const normalizedUser = userStr.replace(/\r\n/g, '\n');
+
   const getStats = (patch: Diff.StructuredPatch) => {
     let addedLines = 0;
     let removedLines = 0;
@@ -46,8 +52,8 @@ export function getDiffStat(
   const modelPatch = Diff.structuredPatch(
     fileName,
     fileName,
-    oldStr,
-    aiStr,
+    normalizedOld,
+    normalizedAi,
     'Current',
     'Proposed',
     DEFAULT_STRUCTURED_PATCH_OPTS,
@@ -57,8 +63,8 @@ export function getDiffStat(
   const userPatch = Diff.structuredPatch(
     fileName,
     fileName,
-    aiStr,
-    userStr,
+    normalizedAi,
+    normalizedUser,
     'Proposed',
     'User',
     DEFAULT_STRUCTURED_PATCH_OPTS,

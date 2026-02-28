@@ -460,20 +460,14 @@ export class SchedulerStateManager {
     let resultDisplay: ToolResultDisplay | undefined = undefined;
     if (this.isWaitingToolCall(call)) {
       const details = call.confirmationDetails;
-      if (
-        details.type === 'edit' &&
-        'fileDiff' in details &&
-        'fileName' in details &&
-        'filePath' in details &&
-        'originalContent' in details &&
-        'newContent' in details
-      ) {
+      if (details.type === 'edit') {
         resultDisplay = {
           fileDiff: details.fileDiff,
           fileName: details.fileName,
           filePath: details.filePath,
           originalContent: details.originalContent,
           newContent: details.newContent,
+          diffStat: details.diffStat,
         };
       }
     }

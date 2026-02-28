@@ -21,6 +21,7 @@ import {
   ToolConfirmationOutcome,
   type AnyDeclarativeTool,
   type AnyToolInvocation,
+  type DiffStat,
 } from '../tools/tools.js';
 import { MessageBusType } from '../confirmation-bus/types.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
@@ -363,6 +364,17 @@ describe('SchedulerStateManager', () => {
       stateManager.enqueue([call]);
       stateManager.dequeue();
 
+      const diffStat: DiffStat = {
+        model_added_lines: 1,
+        model_removed_lines: 2,
+        model_added_chars: 10,
+        model_removed_chars: 20,
+        user_added_lines: 0,
+        user_removed_lines: 0,
+        user_added_chars: 0,
+        user_removed_chars: 0,
+      };
+
       const details = {
         type: 'edit' as const,
         title: 'Edit',
@@ -371,6 +383,7 @@ describe('SchedulerStateManager', () => {
         fileDiff: 'diff',
         originalContent: 'old',
         newContent: 'new',
+        diffStat,
         onConfirm: vi.fn(),
       };
 
@@ -394,6 +407,7 @@ describe('SchedulerStateManager', () => {
         filePath: '/path/to/test.txt',
         originalContent: 'old',
         newContent: 'new',
+        diffStat,
       });
     });
 

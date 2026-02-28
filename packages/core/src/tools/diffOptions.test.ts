@@ -179,4 +179,23 @@ describe('getDiffStat', () => {
       user_removed_chars: 0,
     });
   });
+
+  it('should normalize line endings (CRLF vs LF) to ensure accurate diff stats', () => {
+    const oldStr = 'line1\r\nline2\r\nline3\r\n';
+    const aiStr = 'line1\nline2 modified\nline3\n';
+    const userStr = aiStr;
+    const diffStat = getDiffStat(fileName, oldStr, aiStr, userStr);
+    // Without normalization, this might report 3 removed lines (the whole file).
+    // With normalization, it should correctly report 1 added and 1 removed line.
+    expect(diffStat).toEqual({
+      model_added_lines: 1,
+      model_removed_lines: 1,
+      model_added_chars: 14,
+      model_removed_chars: 5,
+      user_added_lines: 0,
+      user_removed_lines: 0,
+      user_added_chars: 0,
+      user_removed_chars: 0,
+    });
+  });
 });

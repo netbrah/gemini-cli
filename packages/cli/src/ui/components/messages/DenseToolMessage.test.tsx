@@ -9,6 +9,7 @@ import { renderWithProviders } from '../../../test-utils/render.js';
 import { DenseToolMessage } from './DenseToolMessage.js';
 import { CoreToolCallStatus } from '../../types.js';
 import type {
+  DiffStat,
   FileDiff,
   SerializableConfirmationDetails,
   ToolResultDisplay,
@@ -83,7 +84,7 @@ describe('DenseToolMessage', () => {
     );
     await waitUntilReady();
     const output = lastFrame();
-    expect(output).toContain('test.ts (+15, -6) → Accepted');
+    expect(output).toContain('test.ts → Accepted (+15, -6)');
     expect(output).toContain('diff content');
     expect(output).toMatchSnapshot();
   });
@@ -125,6 +126,16 @@ describe('DenseToolMessage', () => {
       filePath: '/path/to/styles.scss',
       originalContent: 'old line',
       newContent: 'new line',
+      diffStat: {
+        user_added_lines: 1,
+        user_removed_lines: 1,
+        user_added_chars: 0,
+        user_removed_chars: 0,
+        model_added_lines: 0,
+        model_removed_lines: 0,
+        model_added_chars: 0,
+        model_removed_chars: 0,
+      },
     };
     const { lastFrame, waitUntilReady } = renderWithProviders(
       <DenseToolMessage
@@ -138,10 +149,47 @@ describe('DenseToolMessage', () => {
     await waitUntilReady();
     const output = lastFrame();
     expect(output).toContain('Edit');
-    expect(output).toContain('styles.scss');
-    expect(output).toContain('→ Rejected');
+    expect(output).toContain('styles.scss → Rejected (+1, -1)');
     expect(output).toContain('- old line');
     expect(output).toContain('+ new line');
+    expect(output).toMatchSnapshot();
+  });
+
+  it('renders correctly for Rejected Edit tool with confirmationDetails and diffStat', async () => {
+    const confirmationDetails: SerializableConfirmationDetails = {
+      type: 'edit',
+      title: 'Confirm Edit',
+      fileName: 'styles.scss',
+      filePath: '/path/to/styles.scss',
+      fileDiff:
+        '@@ -1,1 +1,1 @@\n-body { color: blue; }\n+body { color: red; }',
+      originalContent: 'body { color: blue; }',
+      newContent: 'body { color: red; }',
+      diffStat: {
+        user_added_lines: 1,
+        user_removed_lines: 1,
+        user_added_chars: 0,
+        user_removed_chars: 0,
+        model_added_lines: 0,
+        model_removed_lines: 0,
+        model_added_chars: 0,
+        model_removed_chars: 0,
+      } as DiffStat,
+    };
+    const { lastFrame, waitUntilReady } = renderWithProviders(
+      <DenseToolMessage
+        {...defaultProps}
+        name="Edit"
+        status={CoreToolCallStatus.Cancelled}
+        resultDisplay={undefined}
+        confirmationDetails={confirmationDetails}
+      />,
+      { useAlternateBuffer: false },
+    );
+    await waitUntilReady();
+    const output = lastFrame();
+    expect(output).toContain('Edit');
+    expect(output).toContain('styles.scss → Rejected (+1, -1)');
     expect(output).toMatchSnapshot();
   });
 
@@ -175,8 +223,7 @@ describe('DenseToolMessage', () => {
     await waitUntilReady();
     const output = lastFrame();
     expect(output).toContain('WriteFile');
-    expect(output).toContain('config.json (+1, -1)');
-    expect(output).toContain('→ Accepted');
+    expect(output).toContain('config.json → Accepted (+1, -1)');
     expect(output).toContain('+ new content');
     expect(output).toMatchSnapshot();
   });
