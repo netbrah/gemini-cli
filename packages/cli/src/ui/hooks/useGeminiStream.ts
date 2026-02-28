@@ -184,6 +184,7 @@ export const useGeminiStream = (
   geminiClient: GeminiClient,
   history: HistoryItem[],
   addItem: UseHistoryManagerReturn['addItem'],
+  addItems: UseHistoryManagerReturn['addItems'],
   config: Config,
   settings: LoadedSettings,
   onDebugMessage: (message: string) => void,
@@ -266,14 +267,22 @@ export const useGeminiStream = (
           (tc) => !pushedToolCallIdsRef.current.has(tc.request.callId),
         );
         if (toolsToPush.length > 0) {
-          addItem(
-            mapTrackedToolCallsToDisplay(toolsToPush as TrackedToolCall[], {
+          const historyItem = mapTrackedToolCallsToDisplay(
+            toolsToPush as TrackedToolCall[],
+            {
               borderTop: isFirstToolInGroupRef.current,
               borderBottom: true,
               borderColor: theme.border.default,
               borderDimColor: false,
-            }),
+            },
           );
+
+          addItems([historyItem]);
+
+          // Update pushed IDs atomically
+          const newPushed = new Set(pushedToolCallIdsRef.current);
+          toolsToPush.forEach((tc) => newPushed.add(tc.request.callId));
+          setPushedToolCallIds(newPushed);
         }
 
         // Clear the live-updating display now that the final state is in history.
@@ -399,6 +408,7 @@ export const useGeminiStream = (
 
     if (toolsToPush.length > 0) {
       const newPushed = new Set(pushedToolCallIdsRef.current);
+      const newHistoryItems: HistoryItemWithoutId[] = [];
       let isFirst = isFirstToolInGroupRef.current;
 
       for (const tc of toolsToPush) {
@@ -416,10 +426,13 @@ export const useGeminiStream = (
             backgroundShells,
           ),
         });
-        addItem(historyItem);
+        newHistoryItems.push(historyItem);
         isFirst = false;
       }
 
+      if (newHistoryItems.length > 0) {
+        addItems(newHistoryItems);
+      }
       setPushedToolCallIds(newPushed);
       setIsFirstToolInGroup(false);
     }
@@ -429,7 +442,7 @@ export const useGeminiStream = (
     isFirstToolInGroupRef,
     setPushedToolCallIds,
     setIsFirstToolInGroup,
-    addItem,
+    addItems,
     activeShellPtyId,
     isShellFocused,
     backgroundShells,

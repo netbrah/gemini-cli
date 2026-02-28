@@ -80,6 +80,7 @@ describe('useIncludeDirsTrust', () => {
 
     mockHistoryManager = {
       addItem: vi.fn(),
+      addItems: vi.fn(),
       history: [],
       updateItem: vi.fn(),
       clearItems: vi.fn(),

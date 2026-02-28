@@ -77,6 +77,7 @@ describe('App', () => {
     } as unknown as React.MutableRefObject<DOMElement | null>,
     historyManager: {
       addItem: vi.fn(),
+      addItems: vi.fn(),
       history: [],
       updateItem: vi.fn(),
       clearItems: vi.fn(),

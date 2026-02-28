@@ -20,6 +20,11 @@ export interface UseHistoryManagerReturn {
     baseTimestamp?: number,
     isResuming?: boolean,
   ) => number; // Returns the generated ID
+  addItems: (
+    itemsData: Array<Omit<HistoryItem, 'id'>>,
+    baseTimestamp?: number,
+    isResuming?: boolean,
+  ) => number[]; // Returns the generated IDs
   updateItem: (
     id: number,
     updates: Partial<Omit<HistoryItem, 'id'>> | HistoryItemUpdater,
@@ -54,72 +59,94 @@ export function useHistory({
     setHistory(newHistory);
   }, []);
 
-  // Adds a new item to the history state with a unique ID.
+  // Adds multiple items to history atomically.
+  const addItems = useCallback(
+    (
+      itemsData: Array<Omit<HistoryItem, 'id'>>,
+      baseTimestamp: number = Date.now(),
+      isResuming: boolean = false,
+    ): number[] => {
+      const newItems: HistoryItem[] = itemsData.map((itemData) => {
+        const id = getNextMessageId(baseTimestamp);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+        return { ...itemData, id } as HistoryItem;
+      });
+
+      setHistory((prevHistory) => {
+        let lastItem =
+          prevHistory.length > 0 ? prevHistory[prevHistory.length - 1] : null;
+        const filteredNewItems: HistoryItem[] = [];
+
+        for (const newItem of newItems) {
+          // Prevent adding duplicate consecutive user messages
+          if (
+            lastItem &&
+            lastItem.type === 'user' &&
+            newItem.type === 'user' &&
+            lastItem.text === newItem.text
+          ) {
+            continue;
+          }
+          filteredNewItems.push(newItem);
+          lastItem = newItem;
+        }
+
+        return [...prevHistory, ...filteredNewItems];
+      });
+
+      if (!isResuming && chatRecordingService) {
+        for (const itemData of itemsData) {
+          switch (itemData.type) {
+            case 'compression':
+            case 'info':
+              chatRecordingService?.recordMessage({
+                model: undefined,
+                type: 'info',
+                content: itemData.text ?? '',
+              });
+              break;
+            case 'warning':
+              chatRecordingService?.recordMessage({
+                model: undefined,
+                type: 'warning',
+                content: itemData.text ?? '',
+              });
+              break;
+            case 'error':
+              chatRecordingService?.recordMessage({
+                model: undefined,
+                type: 'error',
+                content: itemData.text ?? '',
+              });
+              break;
+            case 'user':
+            case 'gemini':
+            case 'gemini_content':
+              // Core conversation recording handled by GeminiChat.
+              break;
+            default:
+              // Ignore the rest.
+              break;
+          }
+        }
+      }
+
+      return newItems.map((item) => item.id);
+    },
+    [getNextMessageId, chatRecordingService],
+  );
+
+  // Adds a single item to the history state (wrapper around addItems).
   const addItem = useCallback(
     (
       itemData: Omit<HistoryItem, 'id'>,
       baseTimestamp: number = Date.now(),
       isResuming: boolean = false,
     ): number => {
-      const id = getNextMessageId(baseTimestamp);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const newItem: HistoryItem = { ...itemData, id } as HistoryItem;
-
-      setHistory((prevHistory) => {
-        if (prevHistory.length > 0) {
-          const lastItem = prevHistory[prevHistory.length - 1];
-          // Prevent adding duplicate consecutive user messages
-          if (
-            lastItem.type === 'user' &&
-            newItem.type === 'user' &&
-            lastItem.text === newItem.text
-          ) {
-            return prevHistory; // Don't add the duplicate
-          }
-        }
-        return [...prevHistory, newItem];
-      });
-
-      // Record UI-specific messages, but don't do it if we're actually loading
-      // an existing session.
-      if (!isResuming && chatRecordingService) {
-        switch (itemData.type) {
-          case 'compression':
-          case 'info':
-            chatRecordingService?.recordMessage({
-              model: undefined,
-              type: 'info',
-              content: itemData.text ?? '',
-            });
-            break;
-          case 'warning':
-            chatRecordingService?.recordMessage({
-              model: undefined,
-              type: 'warning',
-              content: itemData.text ?? '',
-            });
-            break;
-          case 'error':
-            chatRecordingService?.recordMessage({
-              model: undefined,
-              type: 'error',
-              content: itemData.text ?? '',
-            });
-            break;
-          case 'user':
-          case 'gemini':
-          case 'gemini_content':
-            // Core conversation recording handled by GeminiChat.
-            break;
-          default:
-            // Ignore the rest.
-            break;
-        }
-      }
-
-      return id; // Return the generated ID (even if not added, to keep signature)
+      const ids = addItems([itemData], baseTimestamp, isResuming);
+      return ids[0];
     },
-    [getNextMessageId, chatRecordingService],
+    [addItems],
   );
 
   /**
@@ -160,10 +187,11 @@ export function useHistory({
     () => ({
       history,
       addItem,
+      addItems,
       updateItem,
       clearItems,
       loadHistory,
     }),
-    [history, addItem, updateItem, clearItems, loadHistory],
+    [history, addItem, addItems, updateItem, clearItems, loadHistory],
   );
 }

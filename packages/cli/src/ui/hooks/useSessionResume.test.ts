@@ -30,6 +30,7 @@ describe('useSessionResume', () => {
   const createMockHistoryManager = (): UseHistoryManagerReturn => ({
     history: [],
     addItem: vi.fn(),
+    addItems: vi.fn(),
     updateItem: vi.fn(),
     clearItems: vi.fn(),
     loadHistory: vi.fn(),
