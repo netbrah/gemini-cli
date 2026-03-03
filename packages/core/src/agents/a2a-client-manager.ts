@@ -22,6 +22,7 @@ import {
   type AuthenticationHandler,
   createAuthenticatingFetchWithRetry,
 } from '@a2a-js/sdk/client';
+import { GrpcTransportFactory } from '@a2a-js/sdk/client/grpc';
 import { v4 as uuidv4 } from 'uuid';
 import { debugLogger } from '../utils/debugLogger.js';
 
@@ -92,6 +93,7 @@ export class A2AClientManager {
         transports: [
           new RestTransportFactory({ fetchImpl }),
           new JsonRpcTransportFactory({ fetchImpl }),
+          new GrpcTransportFactory(),
         ],
         cardResolver: resolver,
       },

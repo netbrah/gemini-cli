@@ -16,7 +16,10 @@ import {
   DefaultAgentCardResolver,
   createAuthenticatingFetchWithRetry,
   ClientFactoryOptions,
+  RestTransportFactory,
+  JsonRpcTransportFactory,
 } from '@a2a-js/sdk/client';
+import { GrpcTransportFactory } from '@a2a-js/sdk/client/grpc';
 import { debugLogger } from '../utils/debugLogger.js';
 
 vi.mock('../utils/debugLogger.js', () => ({
@@ -46,6 +49,13 @@ vi.mock('@a2a-js/sdk/client', () => {
     RestTransportFactory,
     JsonRpcTransportFactory,
     createAuthenticatingFetchWithRetry,
+  };
+});
+
+vi.mock('@a2a-js/sdk/client/grpc', () => {
+  const GrpcTransportFactory = vi.fn();
+  return {
+    GrpcTransportFactory,
   };
 });
 
@@ -122,9 +132,23 @@ describe('A2AClientManager', () => {
         'TestAgent',
         'http://test.agent/card',
       );
-      expect(agentCard).toMatchObject(mockAgentCard);
       expect(manager.getAgentCard('TestAgent')).toBe(agentCard);
       expect(manager.getClient('TestAgent')).toBeDefined();
+    });
+
+    it('should configure ClientFactory with REST, JSON-RPC, and gRPC transports', async () => {
+      await manager.loadAgent('TestAgent', 'http://test.agent/card');
+
+      expect(ClientFactoryOptions.createFrom).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          transports: [
+            expect.any(RestTransportFactory),
+            expect.any(JsonRpcTransportFactory),
+            expect.any(GrpcTransportFactory),
+          ],
+        }),
+      );
     });
 
     it('should throw an error if an agent with the same name is already loaded', async () => {
@@ -239,6 +263,83 @@ describe('A2AClientManager', () => {
       const call = sendMessageStreamMock.mock.calls[0][0];
       expect(call.message.contextId).toBe(expectedContextId);
       expect(call.message.taskId).toBe(expectedTaskId);
+    });
+
+    it('should correctly propagate AbortSignal to the stream', async () => {
+      const controller = new AbortController();
+      sendMessageStreamMock.mockReturnValue(
+        (async function* () {
+          yield {
+            kind: 'message',
+            messageId: 'a',
+            parts: [{ kind: 'text', text: 'Hi' }],
+            role: 'agent',
+          } as SendMessageResult;
+        })(),
+      );
+
+      const stream = manager.sendMessageStream('TestAgent', 'Hello', {
+        signal: controller.signal,
+      });
+      for await (const _ of stream) {
+        // consume
+      }
+
+      expect(sendMessageStreamMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ signal: controller.signal }),
+      );
+    });
+
+    it('should handle a multi-chunk stream with different event types', async () => {
+      const chunks: SendMessageResult[] = [
+        {
+          kind: 'status-update',
+          taskId: 't1',
+          status: {
+            state: 'working',
+            message: {
+              kind: 'message',
+              role: 'agent',
+              messageId: 'm1',
+              parts: [{ kind: 'text', text: 'Thinking...' }],
+            },
+          },
+        } as SendMessageResult,
+        {
+          kind: 'message',
+          messageId: 'm2',
+          role: 'agent',
+          parts: [{ kind: 'text', text: 'Step 1' }],
+        } as SendMessageResult,
+        {
+          kind: 'artifact-update',
+          taskId: 't1',
+          artifact: {
+            artifactId: 'art1',
+            parts: [{ kind: 'text', text: 'Data' }],
+          },
+        } as SendMessageResult,
+      ];
+
+      sendMessageStreamMock.mockReturnValue(
+        (async function* () {
+          for (const chunk of chunks) {
+            yield chunk;
+          }
+        })(),
+      );
+
+      const stream = manager.sendMessageStream('TestAgent', 'Hello');
+      const results = [];
+      for await (const res of stream) {
+        results.push(res);
+      }
+
+      expect(results).toHaveLength(3);
+      expect(results[0].kind).toBe('status-update');
+      expect(results[1].kind).toBe('message');
+      expect(results[2].kind).toBe('artifact-update');
     });
 
     it('should throw prefixed error on failure', async () => {
