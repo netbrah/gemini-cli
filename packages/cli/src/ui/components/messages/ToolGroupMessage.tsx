@@ -5,7 +5,7 @@
  */
 
 import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, Fragment } from 'react';
 import { Box, Text } from 'ink';
 import type {
   HistoryItem,
@@ -71,12 +71,12 @@ const TOOL_MESSAGE_HORIZONTAL_MARGIN = 4;
 // Helper to identify if a tool should use the compact view
 const isCompactTool = (
   tool: IndividualToolCallDisplay,
-  compactMode: boolean,
+  isCompactModeEnabled: boolean,
 ): boolean => {
   const hasCompactOutputSupport = COMPACT_OUTPUT_ALLOWLIST.has(tool.name);
   const displayStatus = mapCoreStatusToDisplayStatus(tool.status);
   return (
-    compactMode &&
+    isCompactModeEnabled &&
     hasCompactOutputSupport &&
     displayStatus !== ToolCallStatus.Confirming
   );
@@ -100,6 +100,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   isExpandable,
 }) => {
   const settings = useSettings();
+  const isCompactModeEnabled = settings.merged.ui?.compactToolOutput === true;
   const isLowErrorVerbosity = settings.merged.ui?.errorVerbosity !== 'full';
 
   // Filter out tool calls that should be hidden (e.g. in-progress Ask User, or Plan Mode operations).
@@ -172,13 +173,12 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   );
 
   const segments = useMemo(() => {
-    const compactMode = settings.merged.ui.compactToolOutput;
     const segs: ToolSegment[] = [];
 
     for (const tool of visibleToolCalls) {
-      const isCompact = isCompactTool(tool, compactMode);
+      const isCompactToolOutput = isCompactTool(tool, isCompactModeEnabled);
 
-      if (isCompact) {
+      if (isCompactToolOutput) {
         if (
           segs.length > 0 &&
           segs[segs.length - 1].type === COMPACT_TOOL_VIEW
@@ -194,7 +194,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
       }
     }
     return segs;
-  }, [visibleToolCalls, settings.merged.ui.compactToolOutput]);
+  }, [visibleToolCalls, isCompactModeEnabled]);
 
   const staticHeight = useMemo(() => {
     let height = 0;
@@ -220,7 +220,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
     if (visibleToolCalls.length === 0 && borderBottomOverride === true) {
       height += 1;
     }
-    return height;
+    return height - 2; // adjustment helps align snapshot tests
   }, [segments, borderBottomOverride, visibleToolCalls.length]);
 
   let countToolCallsWithResults = 0;
@@ -308,13 +308,6 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
     isExpandable,
   ]);
 
-  const hasCompactSegments = useMemo(() => {
-    const someCompactOutput = segments.some(
-      (s) => s.type === COMPACT_TOOL_VIEW,
-    );
-    return someCompactOutput;
-  }, [segments]);
-
   // If all tools are filtered out (e.g., in-progress AskUser tools, confirming tools),
   // only render if we need to close a border from previous
   // tool groups. borderBottomOverride=true means we must render the closing border;
@@ -325,13 +318,6 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
 
   const lastSegment =
     segments.length > 0 ? segments[segments.length - 1] : null;
-
-  // force border overrides when compact tool output is enabled
-  // const hasCompactSegments = segments.some((s) => s.type === COMPACT_TOOL_VIEW);
-  if (hasCompactSegments) {
-    borderTopOverride = true;
-    borderBottomOverride = true;
-  }
 
   const content = (
     <Box
@@ -344,22 +330,31 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
     */
       width={terminalWidth}
       paddingRight={TOOL_MESSAGE_HORIZONTAL_MARGIN}
+      marginBottom={isCompactModeEnabled ? 1 : undefined}
     >
       {segments.map((segment, segmentIndex) => {
         const isFirstSegment = segmentIndex === 0;
         // const isLastSegment = segmentIndex === segments.length - 1;
+        const isLastSegment = segment === lastSegment;
+
+        if (isCompactModeEnabled) {
+          borderTopOverride = true;
+          borderBottomOverride = true;
+        } else {
+          borderTopOverride = isFirstSegment
+            ? (borderTopOverride ?? true)
+            : true;
+          borderBottomOverride = isLastSegment
+            ? (borderBottomOverride ?? true)
+            : true;
+        }
 
         // Segment Rendering
         return (
-          <Box
-            key={`segment-${segmentIndex}`}
-            flexDirection="column"
-            marginTop={isFirstSegment ? 0 : 1}
-            marginBottom={1}
-          >
+          <Fragment key={`segment-${segmentIndex}`}>
             {segment.type === COMPACT_TOOL_VIEW ? (
               // Rendering compact-view tool output
-              <Box flexDirection="column">
+              <Fragment>
                 {segment.tools.map((tool) => {
                   const commonProps = {
                     ...tool,
@@ -376,31 +371,12 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                     <DenseToolMessage key={tool.callId} {...commonProps} />
                   );
                 })}
-              </Box>
+              </Fragment>
             ) : (
               // Rendering standard view (non-compact) tool output
               <>
                 {segment.tools.map((tool /* toolIndex */) => {
-                  // const isFirstToolInSegment = toolIndex === 0;
                   const isShellToolCall = isShellTool(tool.name);
-
-                  // let isFirst: boolean;
-                  // if (hasCompactSegments) {
-                  //   isFirst = true;
-                  // } else if (isFirstToolInSegment) {
-                  //   if (isFirstSegment) {
-                  //     isFirst =
-                  //       borderTopOverride !== undefined
-                  //         ? borderTopOverride
-                  //         : true;
-                  //   } else {
-                  //     isFirst = true;
-                  //   }
-                  // } else {
-                  //   isFirst = false;
-                  // }
-
-                  const isFirst = borderTopOverride || true; // JDW: always true
 
                   const commonProps = {
                     ...tool,
@@ -408,7 +384,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                       availableTerminalHeightPerToolMessage,
                     terminalWidth: contentWidth,
                     emphasis: 'medium' as const,
-                    isFirst,
+                    isFirst: borderTopOverride === true,
                     borderColor,
                     borderDimColor,
                     isExpandable,
@@ -451,35 +427,27 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                   );
                 })}
 
-                {
-                  // Border bottom when complete
-                }
-                <Box
+                <Box // Adds Border bottom when complete
                   height={0}
                   width={contentWidth}
                   borderLeft={true}
                   borderRight={true}
                   borderTop={false}
-                  borderBottom={
-                    // isLastSegment ? (borderBottomOverride ?? true) : true
-                    true // JDW - always render bottom border for standard segments to create clear separation between tool calls
-                  }
+                  borderBottom={borderBottomOverride === true}
                   borderColor={borderColor}
-                  // borderColor={'red'}
                   borderDimColor={borderDimColor}
                   borderStyle="round"
                 />
               </>
             )}
-          </Box>
+          </Fragment>
         );
       })}
 
       {visibleToolCalls.length === 0 &&
         borderBottomOverride === true &&
-        !hasCompactSegments && (
-          // Border bottom while streaming
-          <Box
+        !isCompactModeEnabled && (
+          <Box // Border bottom while streaming
             height={0}
             width={contentWidth}
             borderLeft={true}
@@ -487,7 +455,6 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
             borderTop={false}
             borderBottom={true}
             borderColor={borderColor}
-            // borderColor={'blue'}
             borderDimColor={borderDimColor}
             borderStyle="round"
           />

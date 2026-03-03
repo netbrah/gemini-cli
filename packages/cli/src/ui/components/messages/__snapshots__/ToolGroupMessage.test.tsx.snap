@@ -33,8 +33,6 @@ exports[`<ToolGroupMessage /> > Border Color Logic > uses gray border when all t
 │                                                                          │
 │ Test result                                                              │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  another-tool A tool for testing                                       │
 │                                                                          │
@@ -55,16 +53,16 @@ exports[`<ToolGroupMessage /> > Border Color Logic > uses yellow border for shel
 exports[`<ToolGroupMessage /> > Golden Snapshots > renders empty tool calls array 1`] = `""`;
 
 exports[`<ToolGroupMessage /> > Golden Snapshots > renders header when scrolled 1`] = `
-"╰──────────────────────────────────────────────────────────────────────────╯
-
-
-╭──────────────────────────────────────────────────────────────────────────╮
-│ ✓  tool-2 Description 2                                                  │                       ▄
+"╭──────────────────────────────────────────────────────────────────────────╮
+│ ✓  tool-1 Description 1. This is a long description that will need to b… │
+│──────────────────────────────────────────────────────────────────────────│
+╰──────────────────────────────────────────────────────────────────────────╯                       ▄
+╭──────────────────────────────────────────────────────────────────────────╮                       █
+│ ✓  tool-2 Description 2                                                  │                       █
 │                                                                          │                       █
 │ line1                                                                    │                       █
 │ line2                                                                    │                       █
 ╰──────────────────────────────────────────────────────────────────────────╯                       █
-                                                                                                   █
 "
 `;
 
@@ -74,8 +72,6 @@ exports[`<ToolGroupMessage /> > Golden Snapshots > renders mixed tool calls incl
 │                                                                          │
 │ Test result                                                              │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ⊷  run_shell_command Run command                                         │
 │                                                                          │
@@ -90,8 +86,6 @@ exports[`<ToolGroupMessage /> > Golden Snapshots > renders multiple tool calls w
 │                                                                          │
 │ Test result                                                              │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ x  error-tool This tool failed                                           │
 │                                                                          │
@@ -120,12 +114,12 @@ exports[`<ToolGroupMessage /> > Golden Snapshots > renders tool call with output
 `;
 
 exports[`<ToolGroupMessage /> > Golden Snapshots > renders two tool groups where only the last line of the previous group is visible 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────╮
+"╰──────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  tool-2 Description 2                                                  │
-│                                                                          │
-│ line1                                                                    │                       ▄
+│                                                                          │                       ▄
+│ line1                                                                    │                       █
 ╰──────────────────────────────────────────────────────────────────────────╯                       █
-                                                                                                   █
 "
 `;
 
@@ -135,8 +129,6 @@ exports[`<ToolGroupMessage /> > Golden Snapshots > renders with limited terminal
 │                                                                          │
 │ This is a long result that might need height constraints                 │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  another-tool Another tool                                             │
 │                                                                          │
@@ -160,15 +152,11 @@ exports[`<ToolGroupMessage /> > Height Calculation > calculates available height
 │                                                                          │
 │ Result 1                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  test-tool A tool for testing                                          │
 │                                                                          │
 │ Result 2                                                                 │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  test-tool A tool for testing                                          │
 │                                                                          │

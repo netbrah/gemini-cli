@@ -6,12 +6,8 @@ exports[`<ToolGroupMessage /> - Interleaved Output > renders [Standard tool view
 │                                                                          │
 │ Standard result 1                                                        │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
   ✓  ReadFile  A tool for testing → Compact result 1
   ✓  ReadFile  A tool for testing → Compact result 2
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  standard-tool-2 A tool for testing                                    │
 │                                                                          │
@@ -26,8 +22,6 @@ exports[`<ToolGroupMessage /> - Interleaved Output > renders [Standard tool view
 │                                                                          │
 │ Standard result 1                                                        │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  standard-tool-2 A tool for testing                                    │
 │                                                                          │
@@ -42,8 +36,6 @@ exports[`<ToolGroupMessage /> - Interleaved Output > renders [Standard tool view
 │                                                                          │
 │ Standard result 1                                                        │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  standard-tool-2 A tool for testing                                    │
 │                                                                          │
@@ -58,8 +50,6 @@ exports[`<ToolGroupMessage /> - Interleaved Output > renders [Standard tool view
 │                                                                          │
 │ Standard result 1                                                        │
 ╰──────────────────────────────────────────────────────────────────────────╯
-
-
 ╭──────────────────────────────────────────────────────────────────────────╮
 │ ✓  standard-tool-2 A tool for testing                                    │
 │                                                                          │
