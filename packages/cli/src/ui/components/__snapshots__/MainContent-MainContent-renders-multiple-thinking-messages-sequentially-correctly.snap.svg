@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="920" height="292" viewBox="0 0 920 292">
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="326" viewBox="0 0 920 326">
   <style>
     text { font-family: Consolas, "Courier New", monospace; font-size: 14px; dominant-baseline: text-before-edge; white-space: pre; }
   </style>
-  <rect width="920" height="292" fill="#000000" />
+  <rect width="920" height="326" fill="#000000" />
   <g transform="translate(10, 10)">
     <text x="0" y="2" fill="#ffffff" textLength="900" lengthAdjust="spacingAndGlyphs">ScrollableList                                                                                      </text>
     <text x="0" y="19" fill="#ffffff" textLength="900" lengthAdjust="spacingAndGlyphs">AppHeader(full)                                                                                     </text>
@@ -25,16 +25,18 @@
     <text x="9" y="155" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="27" y="155" fill="#6c7086" textLength="72" lengthAdjust="spacingAndGlyphs">problem.</text>
     <text x="9" y="172" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="18" y="172" fill="#ffffff" textLength="882" lengthAdjust="spacingAndGlyphs"> Planning execution                                                                               </text>
     <text x="9" y="189" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="27" y="189" fill="#6c7086" textLength="828" lengthAdjust="spacingAndGlyphs">This a second multiple line paragraph for the second thinking message explaining the plan in</text>
+    <text x="18" y="189" fill="#ffffff" textLength="882" lengthAdjust="spacingAndGlyphs"> Planning execution                                                                               </text>
     <text x="9" y="206" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="27" y="206" fill="#6c7086" textLength="468" lengthAdjust="spacingAndGlyphs">detail so that it wraps around the terminal display.</text>
+    <text x="27" y="206" fill="#6c7086" textLength="828" lengthAdjust="spacingAndGlyphs">This a second multiple line paragraph for the second thinking message explaining the plan in</text>
     <text x="9" y="223" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="18" y="223" fill="#ffffff" textLength="882" lengthAdjust="spacingAndGlyphs"> Refining approach                                                                                </text>
+    <text x="27" y="223" fill="#6c7086" textLength="468" lengthAdjust="spacingAndGlyphs">detail so that it wraps around the terminal display.</text>
     <text x="9" y="240" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="27" y="240" fill="#6c7086" textLength="792" lengthAdjust="spacingAndGlyphs">And finally a third multiple line paragraph for the third thinking message to refine the</text>
     <text x="9" y="257" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="27" y="257" fill="#6c7086" textLength="81" lengthAdjust="spacingAndGlyphs">solution.</text>
+    <text x="18" y="257" fill="#ffffff" textLength="882" lengthAdjust="spacingAndGlyphs"> Refining approach                                                                                </text>
+    <text x="9" y="274" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="27" y="274" fill="#6c7086" textLength="792" lengthAdjust="spacingAndGlyphs">And finally a third multiple line paragraph for the third thinking message to refine the</text>
+    <text x="9" y="291" fill="#6c7086" textLength="9" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="27" y="291" fill="#6c7086" textLength="81" lengthAdjust="spacingAndGlyphs">solution.</text>
   </g>
 </svg>

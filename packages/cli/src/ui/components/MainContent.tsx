@@ -62,19 +62,32 @@ export const MainContent = () => {
     return -1;
   }, [uiState.history]);
 
-  const historyItems = useMemo(
+  const augmentedHistory = useMemo(
     () =>
-      uiState.history.map((h, index) => {
+      uiState.history.map((item, index) => {
         const isExpandable = index > lastUserPromptIndex;
         const isFirstThinking =
-          h.type === 'thinking' &&
+          item.type === 'thinking' &&
           (index === 0 || uiState.history[index - 1]?.type !== 'thinking');
         const isFirstAfterThinking =
-          h.type !== 'thinking' &&
+          item.type !== 'thinking' &&
           index > 0 &&
           uiState.history[index - 1]?.type === 'thinking';
 
-        return (
+        return {
+          item,
+          isExpandable,
+          isFirstThinking,
+          isFirstAfterThinking,
+        };
+      }),
+    [uiState.history, lastUserPromptIndex],
+  );
+
+  const historyItems = useMemo(
+    () =>
+      augmentedHistory.map(
+        ({ item, isExpandable, isFirstThinking, isFirstAfterThinking }) => (
           <MemoizedHistoryItemDisplay
             terminalWidth={mainAreaWidth}
             availableTerminalHeight={
@@ -83,23 +96,22 @@ export const MainContent = () => {
                 : undefined
             }
             availableTerminalHeightGemini={MAX_GEMINI_MESSAGE_LINES}
-            key={h.id}
-            item={h}
+            key={item.id}
+            item={item}
             isPending={false}
             commands={uiState.slashCommands}
             isExpandable={isExpandable}
             isFirstThinking={isFirstThinking}
             isFirstAfterThinking={isFirstAfterThinking}
           />
-        );
-      }),
+        ),
+      ),
     [
-      uiState.history,
+      augmentedHistory,
       mainAreaWidth,
       staticAreaMaxItemHeight,
       uiState.slashCommands,
       uiState.constrainHeight,
-      lastUserPromptIndex,
     ],
   );
 
@@ -162,25 +174,18 @@ export const MainContent = () => {
   const virtualizedData = useMemo(
     () => [
       { type: 'header' as const },
-      ...uiState.history.map((item, index) => {
-        const isFirstThinking =
-          item.type === 'thinking' &&
-          (index === 0 || uiState.history[index - 1]?.type !== 'thinking');
-        const isFirstAfterThinking =
-          item.type !== 'thinking' &&
-          index > 0 &&
-          uiState.history[index - 1]?.type === 'thinking';
-        return {
+      ...augmentedHistory.map(
+        ({ item, isExpandable, isFirstThinking, isFirstAfterThinking }) => ({
           type: 'history' as const,
           item,
-          isExpandable: index > lastUserPromptIndex,
+          isExpandable,
           isFirstThinking,
           isFirstAfterThinking,
-        };
-      }),
+        }),
+      ),
       { type: 'pending' as const },
     ],
-    [uiState.history, lastUserPromptIndex],
+    [augmentedHistory],
   );
 
   const renderItem = useCallback(
