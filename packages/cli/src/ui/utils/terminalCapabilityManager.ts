@@ -76,9 +76,6 @@ export class TerminalCapabilityManager {
 
   private detectionComplete = false;
   private terminalBackgroundColor: TerminalBackgroundColor;
-  private kittySupported = false;
-  private kittyEnabled = false;
-  private modifyOtherKeysSupported = false;
   private terminalName: string | undefined;
 
   private constructor() {}
@@ -172,7 +169,6 @@ export class TerminalCapabilityManager {
           TerminalCapabilityManager.KITTY_REGEX.test(buffer)
         ) {
           kittyKeyboardReceived = true;
-          this.kittySupported = true;
         }
 
         // check for modifyOtherKeys support
@@ -182,11 +178,6 @@ export class TerminalCapabilityManager {
           );
           if (match) {
             modifyOtherKeysReceived = true;
-            const level = parseInt(match[1], 10);
-            this.modifyOtherKeysSupported = level >= 2;
-            debugLogger.log(
-              `Detected modifyOtherKeys support: ${this.modifyOtherKeysSupported} (level ${level})`,
-            );
           }
         }
 
@@ -245,12 +236,8 @@ export class TerminalCapabilityManager {
 
   enableSupportedModes() {
     try {
-      if (this.kittySupported) {
-        enableKittyKeyboardProtocol();
-        this.kittyEnabled = true;
-      } else if (this.modifyOtherKeysSupported) {
-        enableModifyOtherKeys();
-      }
+      enableModifyOtherKeys();
+      enableKittyKeyboardProtocol();
       // Always enable bracketed paste since it'll be ignored if unsupported.
       enableBracketedPasteMode();
     } catch (e) {
@@ -267,7 +254,7 @@ export class TerminalCapabilityManager {
   }
 
   isKittyProtocolEnabled(): boolean {
-    return this.kittyEnabled;
+    return true;
   }
 
   supportsOsc9Notifications(env: NodeJS.ProcessEnv = process.env): boolean {
