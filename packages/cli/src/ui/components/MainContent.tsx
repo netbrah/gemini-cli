@@ -69,10 +69,10 @@ export const MainContent = () => {
         const isFirstThinking =
           h.type === 'thinking' &&
           (index === 0 || uiState.history[index - 1]?.type !== 'thinking');
-        const isLastThinking =
-          h.type === 'thinking' &&
-          (index === uiState.history.length - 1 ||
-            uiState.history[index + 1]?.type !== 'thinking');
+        const isFirstAfterThinking =
+          h.type !== 'thinking' &&
+          index > 0 &&
+          uiState.history[index - 1]?.type === 'thinking';
 
         return (
           <MemoizedHistoryItemDisplay
@@ -89,7 +89,7 @@ export const MainContent = () => {
             commands={uiState.slashCommands}
             isExpandable={isExpandable}
             isFirstThinking={isFirstThinking}
-            isLastThinking={isLastThinking}
+            isFirstAfterThinking={isFirstAfterThinking}
           />
         );
       }),
@@ -122,10 +122,11 @@ export const MainContent = () => {
             (i === 0 || pendingHistoryItems[i - 1]?.type !== 'thinking') &&
             (uiState.history.length === 0 ||
               uiState.history.at(-1)?.type !== 'thinking');
-          const isLastThinking =
-            item.type === 'thinking' &&
-            (i === pendingHistoryItems.length - 1 ||
-              pendingHistoryItems[i + 1]?.type !== 'thinking');
+          const isFirstAfterThinking =
+            item.type !== 'thinking' &&
+            (i === 0
+              ? uiState.history.at(-1)?.type === 'thinking'
+              : pendingHistoryItems[i - 1]?.type === 'thinking');
 
           return (
             <HistoryItemDisplay
@@ -138,7 +139,7 @@ export const MainContent = () => {
               isPending={true}
               isExpandable={true}
               isFirstThinking={isFirstThinking}
-              isLastThinking={isLastThinking}
+              isFirstAfterThinking={isFirstAfterThinking}
             />
           );
         })}
@@ -165,16 +166,16 @@ export const MainContent = () => {
         const isFirstThinking =
           item.type === 'thinking' &&
           (index === 0 || uiState.history[index - 1]?.type !== 'thinking');
-        const isLastThinking =
-          item.type === 'thinking' &&
-          (index === uiState.history.length - 1 ||
-            uiState.history[index + 1]?.type !== 'thinking');
+        const isFirstAfterThinking =
+          item.type !== 'thinking' &&
+          index > 0 &&
+          uiState.history[index - 1]?.type === 'thinking';
         return {
           type: 'history' as const,
           item,
           isExpandable: index > lastUserPromptIndex,
           isFirstThinking,
-          isLastThinking,
+          isFirstAfterThinking,
         };
       }),
       { type: 'pending' as const },
@@ -208,7 +209,7 @@ export const MainContent = () => {
             commands={uiState.slashCommands}
             isExpandable={item.isExpandable}
             isFirstThinking={item.isFirstThinking}
-            isLastThinking={item.isLastThinking}
+            isFirstAfterThinking={item.isFirstAfterThinking}
           />
         );
       } else {

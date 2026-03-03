@@ -15,7 +15,6 @@ interface ThinkingMessageProps {
   thought: ThoughtSummary;
   terminalWidth: number;
   isFirstThinking?: boolean;
-  isLastThinking?: boolean;
 }
 
 const THINKING_LEFT_PADDING = 1;
@@ -122,7 +121,6 @@ export const ThinkingMessage: React.FC<ThinkingMessageProps> = ({
   thought,
   terminalWidth,
   isFirstThinking,
-  isLastThinking,
 }) => {
   const fullLines = useMemo(() => normalizeThoughtLines(thought), [thought]);
   const contentWidth = Math.max(
@@ -153,24 +151,19 @@ export const ThinkingMessage: React.FC<ThinkingMessageProps> = ({
   );
 
   return (
-    <Box
-      width={terminalWidth}
-      flexDirection="column"
-      marginBottom={isLastThinking ? 1 : 0}
-    >
+    <Box width={terminalWidth} flexDirection="column">
       {isFirstThinking && (
-        <>
-          <Text color={theme.text.primary} italic>
-            {' '}
-            Thinking...{' '}
-          </Text>
-          <Box flexDirection="row">
-            <Box width={THINKING_LEFT_PADDING} />
-            {verticalLine}
-            <Text> </Text>
-          </Box>
-        </>
+        <Text color={theme.text.primary} italic>
+          {' '}
+          Thinking...{' '}
+        </Text>
       )}
+
+      <Box flexDirection="row">
+        <Box width={THINKING_LEFT_PADDING} />
+        {verticalLine}
+        <Text> </Text>
+      </Box>
 
       {fullSummaryDisplayLines.map((line, index) => (
         <Box key={`summary-line-row-${index}`} flexDirection="row">

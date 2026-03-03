@@ -145,6 +145,5 @@ AppHeader(full)
  │ detail so that it wraps around the terminal display.
  │ Refining approach
  │ And finally a third multiple line paragraph for the third thinking message to refine the
- │ solution.
-"
+ │ solution."
 `;
