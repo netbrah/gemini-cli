@@ -109,7 +109,7 @@ export class DiscoveredMCPToolInvocation extends BaseToolInvocation<
     );
   }
 
-  protected override getPolicyUpdateOptions(
+  override getPolicyUpdateOptions(
     _outcome: ToolConfirmationOutcome,
   ): PolicyUpdateOptions | undefined {
     return { mcpName: this.serverName };
