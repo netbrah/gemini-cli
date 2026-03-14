@@ -146,6 +146,11 @@ export class LocalSandboxManager implements SandboxManager {
       return this.prepareSeatbeltCommand(req, sanitizedEnv);
     }
 
+    // Linux bubblewrap (bwrap)
+    if (!sandboxCommand && platform === 'linux' && commandExists('bwrap')) {
+      return this.prepareBwrapCommand(req, sanitizedEnv);
+    }
+
     // Fallback: sanitization only with warning
     return this.preparePassthroughCommand(req, sanitizedEnv);
   }
@@ -221,6 +226,102 @@ export class LocalSandboxManager implements SandboxManager {
     // Fallback: return the profile filename — sandbox-exec may find it
     // in the current directory or via its own search path.
     return `sandbox-macos-${profile}.sb`;
+  }
+
+  /**
+   * Wraps a command using bubblewrap (bwrap) for Linux namespace-based
+   * sandboxing. Based on the pattern from Codex's linux-sandbox implementation:
+   *   bwrap --new-session --die-with-parent <mounts>
+   *         --unshare-user --unshare-pid [--unshare-net]
+   *         --proc /proc --dev /dev -- <command> <args>
+   *
+   * The filesystem view is:
+   *   - Read-only bind of the root filesystem (--ro-bind / /)
+   *   - Writable bind of the working directory
+   *   - Writable bind of /tmp
+   *   - Writable bind of HOME
+   *   - Writable binds for any configured allowedPaths
+   *   - Fresh /proc and /dev mounts
+   */
+  private prepareBwrapCommand(
+    req: SandboxRequest,
+    sanitizedEnv: NodeJS.ProcessEnv,
+  ): SandboxedCommand {
+    let resolvedCwd: string;
+    try {
+      resolvedCwd = fs.realpathSync(req.cwd);
+    } catch {
+      resolvedCwd = req.cwd;
+    }
+
+    let resolvedTmp: string;
+    try {
+      resolvedTmp = fs.realpathSync(os.tmpdir());
+    } catch {
+      resolvedTmp = os.tmpdir();
+    }
+
+    let resolvedHome: string;
+    try {
+      resolvedHome = fs.realpathSync(homedir());
+    } catch {
+      resolvedHome = homedir();
+    }
+
+    const bwrapArgs: string[] = [
+      // Session and lifecycle isolation
+      '--new-session',
+      '--die-with-parent',
+
+      // Read-only root filesystem
+      '--ro-bind',
+      '/',
+      '/',
+
+      // Writable carve-outs
+      '--bind',
+      resolvedCwd,
+      resolvedCwd,
+      '--bind',
+      resolvedTmp,
+      resolvedTmp,
+      '--bind',
+      resolvedHome,
+      resolvedHome,
+    ];
+
+    // Add writable binds for configured allowed paths
+    const allowedPaths = this.sandboxConfig?.allowedPaths ?? [];
+    for (const allowedPath of allowedPaths) {
+      let resolved: string;
+      try {
+        resolved = fs.realpathSync(allowedPath);
+      } catch {
+        resolved = allowedPath;
+      }
+      bwrapArgs.push('--bind', resolved, resolved);
+    }
+
+    // Namespace isolation
+    bwrapArgs.push('--unshare-user', '--unshare-pid');
+
+    // Network isolation (disable network unless explicitly allowed)
+    if (!this.sandboxConfig?.networkAccess) {
+      bwrapArgs.push('--unshare-net');
+    }
+
+    // Fresh /proc and /dev mounts
+    bwrapArgs.push('--proc', '/proc', '--dev', '/dev');
+
+    // Separator and the actual command
+    bwrapArgs.push('--', req.command, ...req.args);
+
+    return {
+      program: 'bwrap',
+      args: bwrapArgs,
+      env: sanitizedEnv,
+      cwd: req.cwd,
+    };
   }
 
   private preparePassthroughCommand(

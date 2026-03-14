@@ -403,6 +403,131 @@ describe('LocalSandboxManager', () => {
     expect(result.program).toBe('ls');
     expect(result.args).toEqual(['-la']);
   });
+
+  it('should wrap command with bwrap on Linux when available', async () => {
+    mockedOsPlatform.mockReturnValue('linux');
+    mockedExecSync.mockImplementation((cmd: string) => {
+      if (typeof cmd === 'string' && cmd.includes('bwrap')) {
+        return Buffer.from('/usr/bin/bwrap');
+      }
+      throw new Error('command not found');
+    });
+    const manager = new LocalSandboxManager();
+    const req = {
+      command: 'grep',
+      args: ['-r', 'foo'],
+      cwd: '/workspace',
+      env: { PATH: '/usr/bin' },
+    };
+
+    const result = await manager.prepareCommand(req);
+
+    expect(result.program).toBe('bwrap');
+    // Verify lifecycle flags
+    expect(result.args).toContain('--new-session');
+    expect(result.args).toContain('--die-with-parent');
+    // Verify read-only root
+    const roBindIdx = result.args.indexOf('--ro-bind');
+    expect(roBindIdx).toBeGreaterThanOrEqual(0);
+    expect(result.args[roBindIdx + 1]).toBe('/');
+    expect(result.args[roBindIdx + 2]).toBe('/');
+    // Verify writable carve-outs for cwd, tmp, home
+    expect(result.args).toContain('/workspace');
+    expect(result.args).toContain('/tmp');
+    expect(result.args).toContain('/home/testuser');
+    // Verify namespace isolation
+    expect(result.args).toContain('--unshare-user');
+    expect(result.args).toContain('--unshare-pid');
+    // Verify network isolation (default: no network)
+    expect(result.args).toContain('--unshare-net');
+    // Verify /proc and /dev
+    expect(result.args).toContain('--proc');
+    expect(result.args).toContain('--dev');
+    // Verify separator and original command
+    const separatorIdx = result.args.indexOf('--');
+    expect(separatorIdx).toBeGreaterThan(0);
+    expect(result.args[separatorIdx + 1]).toBe('grep');
+    expect(result.args[separatorIdx + 2]).toBe('-r');
+    expect(result.args[separatorIdx + 3]).toBe('foo');
+    expect(result.cwd).toBe('/workspace');
+  });
+
+  it('should allow network access in bwrap when networkAccess is true', async () => {
+    mockedOsPlatform.mockReturnValue('linux');
+    mockedExecSync.mockImplementation((cmd: string) => {
+      if (typeof cmd === 'string' && cmd.includes('bwrap')) {
+        return Buffer.from('/usr/bin/bwrap');
+      }
+      throw new Error('command not found');
+    });
+    const manager = new LocalSandboxManager({
+      enabled: true,
+      networkAccess: true,
+    });
+    const req = {
+      command: 'curl',
+      args: ['https://example.com'],
+      cwd: '/workspace',
+      env: { PATH: '/usr/bin' },
+    };
+
+    const result = await manager.prepareCommand(req);
+
+    expect(result.program).toBe('bwrap');
+    expect(result.args).not.toContain('--unshare-net');
+  });
+
+  it('should add writable binds for allowedPaths in bwrap', async () => {
+    mockedOsPlatform.mockReturnValue('linux');
+    mockedExecSync.mockImplementation((cmd: string) => {
+      if (typeof cmd === 'string' && cmd.includes('bwrap')) {
+        return Buffer.from('/usr/bin/bwrap');
+      }
+      throw new Error('command not found');
+    });
+    const manager = new LocalSandboxManager({
+      enabled: true,
+      allowedPaths: ['/data/shared', '/opt/tools'],
+    });
+    const req = {
+      command: 'ls',
+      args: ['-la'],
+      cwd: '/workspace',
+      env: { PATH: '/usr/bin' },
+    };
+
+    const result = await manager.prepareCommand(req);
+
+    expect(result.program).toBe('bwrap');
+    // Check that allowed paths appear as --bind arguments
+    const args = result.args;
+    const bindIndices = args.reduce<number[]>((acc, arg, i) => {
+      if (arg === '--bind') acc.push(i);
+      return acc;
+    }, []);
+    // Should have binds for: cwd, tmp, home, /data/shared, /opt/tools
+    expect(bindIndices.length).toBeGreaterThanOrEqual(5);
+    expect(args).toContain('/data/shared');
+    expect(args).toContain('/opt/tools');
+  });
+
+  it('should not use bwrap on Linux when command does not exist', async () => {
+    mockedOsPlatform.mockReturnValue('linux');
+    // execSync throws for all commands => bwrap not found
+    const manager = new LocalSandboxManager();
+    const req = {
+      command: 'ls',
+      args: ['-la'],
+      cwd: '/workspace',
+      env: { PATH: '/usr/bin' },
+    };
+
+    const result = await manager.prepareCommand(req);
+
+    // Falls through to passthrough
+    expect(result.program).toBe('ls');
+    expect(result.args).toEqual(['-la']);
+  });
 });
 
 describe('createSandboxManager', () => {
