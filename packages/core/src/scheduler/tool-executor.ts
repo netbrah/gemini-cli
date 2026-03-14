@@ -423,9 +423,9 @@ export class ToolExecutor {
     const displayText = returnDisplay ?? error.message;
     const response: Record<string, unknown> = { error: error.message };
     if (errorType) {
-      response['error_type'] = errorType;
-      response['recoverable'] = !isFatalToolError(errorType);
-      response['hint'] = getRecoveryHint(errorType);
+      response.error_type = errorType;
+      response.recoverable = !isFatalToolError(errorType);
+      response.hint = getRecoveryHint(errorType);
     }
     return {
       callId: request.callId,

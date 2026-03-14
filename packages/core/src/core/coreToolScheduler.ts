@@ -81,9 +81,9 @@ const createErrorResponse = (
 ): ToolCallResponseInfo => {
   const response: Record<string, unknown> = { error: error.message };
   if (errorType) {
-    response['error_type'] = errorType;
-    response['recoverable'] = !isFatalToolError(errorType);
-    response['hint'] = getRecoveryHint(errorType);
+    response.error_type = errorType;
+    response.recoverable = !isFatalToolError(errorType);
+    response.hint = getRecoveryHint(errorType);
   }
   return {
     callId: request.callId,
