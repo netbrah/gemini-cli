@@ -431,10 +431,15 @@ describe('LocalSandboxManager', () => {
     expect(roBindIdx).toBeGreaterThanOrEqual(0);
     expect(result.args[roBindIdx + 1]).toBe('/');
     expect(result.args[roBindIdx + 2]).toBe('/');
-    // Verify writable carve-outs for cwd, tmp, home
-    expect(result.args).toContain('/workspace');
-    expect(result.args).toContain('/tmp');
-    expect(result.args).toContain('/home/testuser');
+    // Verify writable carve-outs appear as --bind <path> <path> triplets
+    const bindIndices = result.args.reduce<number[]>((acc, arg, i) => {
+      if (arg === '--bind') acc.push(i);
+      return acc;
+    }, []);
+    const bindPaths = bindIndices.map((i) => result.args[i + 1]);
+    expect(bindPaths).toContain('/workspace');
+    expect(bindPaths).toContain('/tmp');
+    expect(bindPaths).toContain('/home/testuser');
     // Verify namespace isolation
     expect(result.args).toContain('--unshare-user');
     expect(result.args).toContain('--unshare-pid');
@@ -505,10 +510,12 @@ describe('LocalSandboxManager', () => {
       if (arg === '--bind') acc.push(i);
       return acc;
     }, []);
-    // Should have binds for: cwd, tmp, home, /data/shared, /opt/tools
-    expect(bindIndices.length).toBeGreaterThanOrEqual(5);
-    expect(args).toContain('/data/shared');
-    expect(args).toContain('/opt/tools');
+    // 5 binds: cwd + tmp + home + 2 allowedPaths (/data/shared, /opt/tools)
+    expect(bindIndices.length).toBe(5);
+    // Verify allowed paths appear as --bind <path> <path> triplets
+    const bindArgs = bindIndices.map((i) => args[i + 1]);
+    expect(bindArgs).toContain('/data/shared');
+    expect(bindArgs).toContain('/opt/tools');
   });
 
   it('should not use bwrap on Linux when command does not exist', async () => {

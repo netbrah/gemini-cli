@@ -247,6 +247,8 @@ export class LocalSandboxManager implements SandboxManager {
     req: SandboxRequest,
     sanitizedEnv: NodeJS.ProcessEnv,
   ): SandboxedCommand {
+    // Resolve symlinks for mount paths; fall back to the raw path if
+    // realpathSync fails (e.g. path doesn't exist yet).
     let resolvedCwd: string;
     try {
       resolvedCwd = fs.realpathSync(req.cwd);
