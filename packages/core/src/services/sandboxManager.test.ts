@@ -419,6 +419,8 @@ describe('createSandboxManager', () => {
   it('should pass sandboxConfig to LocalSandboxManager', () => {
     const config = { enabled: true, command: 'sandbox-exec' as const };
     const manager = createSandboxManager(true, config);
+    // The LocalSandboxManager receives the full SandboxConfig but the
+    // sandboxing-enabled decision is made by the factory, not the manager.
     expect(manager).toBeInstanceOf(LocalSandboxManager);
   });
 });

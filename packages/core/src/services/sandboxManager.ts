@@ -74,8 +74,13 @@ function sanitizeRequestEnv(req: SandboxRequest): NodeJS.ProcessEnv {
 
 /**
  * Checks if a command exists on the system PATH.
+ * The command name is validated to contain only safe characters.
  */
 function commandExists(cmd: string): boolean {
+  // Validate command name contains only alphanumeric, hyphen, underscore, dot
+  if (!/^[a-zA-Z0-9_.-]+$/.test(cmd)) {
+    return false;
+  }
   try {
     execSync(`command -v ${cmd}`, { stdio: 'ignore' });
     return true;
