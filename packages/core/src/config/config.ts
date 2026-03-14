@@ -156,6 +156,10 @@ import { ContextBuilder } from '../safety/context-builder.js';
 import { CheckerRegistry } from '../safety/registry.js';
 import { ConsecaSafetyChecker } from '../safety/conseca/conseca.js';
 import type { AgentLoopContext } from './agent-loop-context.js';
+import {
+  createSandboxManager,
+  type SandboxManager,
+} from '../services/sandboxManager.js';
 
 export interface AccessibilitySettings {
   /** @deprecated Use ui.loadingPhrases instead. */
@@ -508,6 +512,7 @@ export interface ConfigParameters {
   clientVersion?: string;
   embeddingModel?: string;
   sandbox?: SandboxConfig;
+  toolSandboxing?: boolean;
   targetDir: string;
   debugMode: boolean;
   question?: string;
@@ -658,6 +663,7 @@ export class Config implements McpContext, AgentLoopContext {
   readonly modelConfigService: ModelConfigService;
   private readonly embeddingModel: string;
   private readonly sandbox: SandboxConfig | undefined;
+  private readonly _sandboxManager: SandboxManager;
   private readonly targetDir: string;
   private workspaceContext: WorkspaceContext;
   private readonly debugMode: boolean;
@@ -854,6 +860,10 @@ export class Config implements McpContext, AgentLoopContext {
       params.embeddingModel ?? DEFAULT_GEMINI_EMBEDDING_MODEL;
     this.fileSystemService = new StandardFileSystemService();
     this.sandbox = params.sandbox;
+    this._sandboxManager = createSandboxManager(
+      params.toolSandboxing ?? false,
+      params.sandbox,
+    );
     this.targetDir = path.resolve(params.targetDir);
     this.folderTrust = params.folderTrust ?? false;
     this.workspaceContext = new WorkspaceContext(this.targetDir, []);
@@ -1661,6 +1671,10 @@ export class Config implements McpContext, AgentLoopContext {
 
   getSandbox(): SandboxConfig | undefined {
     return this.sandbox;
+  }
+
+  getSandboxManager(): SandboxManager {
+    return this._sandboxManager;
   }
 
   getSandboxEnabled(): boolean {
