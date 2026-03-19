@@ -64,3 +64,15 @@ gemini-debug.log
 evals/logs/
 
 temp_agents/
+
+# NetApp fork — distribution artifacts and work files
+.bin/
+.copilot-reports/
+RCAs/
+llmproxy/
+*.diff
+*.zip
+ekm-okm-*.md
+Dockerfile.sea
+sea-config.json
+openai-shim-abstraction.diff

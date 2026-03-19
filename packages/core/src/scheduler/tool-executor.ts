@@ -16,6 +16,7 @@ import {
   type AgentLoopContext,
   type ToolLiveOutput,
 } from '../index.js';
+import { isFatalToolError, getRecoveryHint } from '../tools/tool-error.js';
 import { isAbortError } from '../utils/errors.js';
 import { SHELL_TOOL_NAME } from '../tools/tool-names.js';
 import { DiscoveredMCPTool } from '../tools/mcp-tool.js';
@@ -421,6 +422,12 @@ export class ToolExecutor {
     returnDisplay?: string,
   ): ToolCallResponseInfo {
     const displayText = returnDisplay ?? error.message;
+    const response: Record<string, unknown> = { error: error.message };
+    if (errorType) {
+      response.error_type = errorType;
+      response.recoverable = !isFatalToolError(errorType);
+      response.hint = getRecoveryHint(errorType);
+    }
     return {
       callId: request.callId,
       error,
@@ -429,7 +436,7 @@ export class ToolExecutor {
           functionResponse: {
             id: request.callId,
             name: request.originalRequestName || request.name,
-            response: { error: error.message },
+            response,
           },
         },
       ],
